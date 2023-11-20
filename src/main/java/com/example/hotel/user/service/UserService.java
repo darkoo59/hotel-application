@@ -1,5 +1,7 @@
 package com.example.hotel.user.service;
 
+import com.example.hotel.exception.InvalidDataFormatException;
+import com.example.hotel.exception.EmailExistException;
 import com.example.hotel.user.dto.RegisterBodyDTO;
 import com.example.hotel.user.model.Guest;
 import com.example.hotel.user.model.Host;
@@ -36,36 +38,24 @@ public class UserService {
         throw new UsernameNotFoundException("user not found in the database");
     }
 
-    public void registerUser(RegisterBodyDTO registerBodyDTO) throws
-            ObjectMappingException, EmailExistsException, InvalidDataFormatException {
+    public void registerUser(RegisterBodyDTO registerBodyDTO) throws EmailExistException, InvalidDataFormatException {
 
         User user = ObjectsMapper.convertRegisterDTOToUser(registerBodyDTO);
-        if (isAnyFieldEmpty(user)){
+        if (isAnyFieldEmpty(user))
             throw new InvalidDataFormatException();
-        }
         if(user.getRole().equals(Role.GUEST)) {
+            if(guestRepository.findByEmail(user.getEmail()).isPresent())
+                throw new EmailExistException();
             Guest guest = (Guest)user;
-            if (isAnyFieldEmpty(guest)){
-                throw new InvalidDataFormatException();
-            }
+            guest.setPassword(passwordEncoder.encode(guest.getPassword()));
+            guestRepository.save(guest);
+        } else {
+            if(hostRepository.findByEmail(user.getEmail()).isPresent())
+                throw new EmailExistException();
+            Host host = (Host)user;
+            host.setPassword(passwordEncoder.encode(host.getPassword()));
+            hostRepository.save(host);
         }
-
-        Client client;
-        try {
-            client = ObjectsMapper.convertRegisterBodyDTOToClient(registerBodyDTO);
-        } catch (Exception e) {
-            App.LOGGER.error(e.getMessage());
-            throw new ObjectMappingException("user");
-        }
-        if (isAnyFieldEmpty(client)){
-            throw new InvalidDataFormatException();
-        }
-
-        if (clientRepository.findByEmail(client.getEmail()).isPresent()) {
-            throw new EmailExistsException();
-        }
-        client.setRole(Role.CLIENT);
-        saveClient(client);
     }
 
     private boolean isAnyFieldEmpty(User user) {

@@ -1,6 +1,8 @@
 package com.example.hotel.user.controller;
 
 import com.example.hotel.HotelApplication;
+import com.example.hotel.exception.EmailExistException;
+import com.example.hotel.exception.InvalidDataFormatException;
 import com.example.hotel.security.AuthUtility;
 import com.example.hotel.user.dto.RegisterBodyDTO;
 import com.example.hotel.user.service.UserService;
@@ -29,14 +31,13 @@ public class UserController {
     @PostMapping("/register")
     public ResponseEntity<?> Register(@RequestBody RegisterBodyDTO registerBodyDTO) {
         Map<String, String> responseObject = new HashMap<>();
-        return new ResponseEntity<>(CREATED);
         try {
             userService.registerUser(registerBodyDTO);
             return new ResponseEntity<>(CREATED);
-        } catch (EmailExistsException e) {
+        } catch (EmailExistException e) {
             responseObject.put("error", "email address is already taken");
             return new ResponseEntity<>(responseObject, CONFLICT);
-        } catch (ObjectMappingException | InvalidDataFormatException e) {
+        } catch (InvalidDataFormatException e) {
             responseObject.put("error", "invalid data format, please provide valid data");
             return new ResponseEntity<>(responseObject, BAD_REQUEST);
         } catch (Exception e) {
