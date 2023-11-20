@@ -38,7 +38,6 @@ public class ObjectsMapper {
                 map().setEmail(source.getEmail());
                 map().setPassword(source.getPassword());
                 map().setPhone(source.getPhone());
-                map().setRole(source.getRole());
                 map().setAddress(source.getAddress());
                 map().setSex(source.getSex());
                 map().setBirthdate(source.getBirthdate());

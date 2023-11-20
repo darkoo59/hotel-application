@@ -10,23 +10,30 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 import static org.springframework.http.HttpStatus.*;
 
 @Controller
-@RequiredArgsConstructor
-@RequestMapping("/api")
+@RequestMapping("/api/user")
 public class UserController {
     private final UserService userService;
     private final AuthUtility authUtility;
+
+    @Autowired
+    public UserController(UserService userService) {
+        this.userService = userService;
+        this.authUtility = new AuthUtility(this.userService);
+    }
 
     @PostMapping("/register")
     public ResponseEntity<?> Register(@RequestBody RegisterBodyDTO registerBodyDTO) {
@@ -47,9 +54,9 @@ public class UserController {
     }
 
     @PostMapping("/token/refresh")
-    public void refreshToken(HttpServletRequest request, HttpServletResponse response) {
+    public void refreshToken(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
-            String accessToken = authUtility.createAccessJWTFromRefreshToken(request);
+            String accessToken = authUtility.createJWTFromRequest(request);
             if (accessToken != null) {
                 AuthUtility.setResponseMessage(response, "access_token", accessToken);
             } else {

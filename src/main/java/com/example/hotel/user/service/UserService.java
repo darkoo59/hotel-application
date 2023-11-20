@@ -1,5 +1,7 @@
 package com.example.hotel.user.service;
 
+import com.example.hotel.confirmationToken.ConfirmationToken;
+import com.example.hotel.confirmationToken.ConfirmationTokenService;
 import com.example.hotel.exception.InvalidDataFormatException;
 import com.example.hotel.exception.EmailExistException;
 import com.example.hotel.role.Role;
@@ -18,6 +20,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.UUID;
 
@@ -30,6 +33,7 @@ public class UserService {
     private final HostRepository hostRepository;
     private final GuestRepository guestRepository;
     private final RoleRepository roleRepository;
+    private final ConfirmationTokenService confirmationTokenService;
     public User getUserBy(String email) throws UsernameNotFoundException {
         Host host = hostRepository.findByEmail(email).orElse(null);
         if (host != null) {
@@ -45,6 +49,12 @@ public class UserService {
 
     public void addRoleToGuest(String email, String roleName) {
         User user = guestRepository.findByEmail(email).get();
+        Role role = roleRepository.findByName(roleName);
+        user.getRoles().add(role);
+    }
+
+    public void addRoleToHost(String email, String roleName) {
+        User user = hostRepository.findByEmail(email).get();
         Role role = roleRepository.findByName(roleName);
         user.getRoles().add(role);
     }
@@ -71,7 +81,7 @@ public class UserService {
                     token,
                     LocalDateTime.now(),
                     LocalDateTime.now().plusMinutes(30),
-                    user
+                    guest
             );
             confirmationTokenService.saveConfirmationToken(confirmationToken);
         } else {
@@ -79,9 +89,23 @@ public class UserService {
                 throw new EmailExistException();
             if(guestRepository.findByEmail(registerBodyDTO.getEmail()).isPresent())
                 throw new EmailExistException();
+            Role role = roleRepository.findByName("ROLE_HOST");
+            if (role == null) {
+                role = new Role(0l, "ROLE_HOST");
+                roleRepository.save(role);
+            }
             Host host = ObjectsMapper.convertRegisterDTOToHost(registerBodyDTO);
             host.setPassword(passwordEncoder.encode(host.getPassword()));
             hostRepository.save(host);
+            addRoleToHost(host.getEmail(), role.getName());
+            String token = UUID.randomUUID().toString();
+            ConfirmationToken confirmationToken = new ConfirmationToken(
+                    token,
+                    LocalDateTime.now(),
+                    LocalDateTime.now().plusMinutes(30),
+                    host
+            );
+            confirmationTokenService.saveConfirmationToken(confirmationToken);
         }
     }
 
