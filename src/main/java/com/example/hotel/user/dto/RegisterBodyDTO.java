@@ -1,6 +1,5 @@
 package com.example.hotel.user.dto;
 
-import com.example.hotel.utils.enums.Role;
 import com.example.hotel.utils.enums.Sex;
 import lombok.Getter;
 import lombok.Setter;
@@ -17,6 +16,6 @@ public class RegisterBodyDTO {
     private String address;
     private String phone;
     private Sex sex;
-    private Role role;
+    private String role;
     private LocalDate birthdate;
 }

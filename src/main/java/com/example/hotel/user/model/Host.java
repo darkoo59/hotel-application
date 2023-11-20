@@ -10,6 +10,5 @@ import lombok.Setter;
 @NoArgsConstructor
 @Getter
 @Setter
-@DiscriminatorValue("host")
 public class Host extends User{
 }

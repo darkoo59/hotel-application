@@ -14,107 +14,77 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import jakarta.servlet.http.HttpServletResponse;
+import com.example.hotel.role.Role;
 
 import java.io.IOException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import static org.springframework.util.MimeTypeUtils.APPLICATION_JSON_VALUE;
 
-@RequiredArgsConstructor
-@Component
 public class AuthUtility {
-    private static String secret;
-    @Value("${jwt.secret}")
-    public void setSecret(String secret) {
-        AuthUtility.secret = secret;
-    }
-
     private final UserService userService;
 
-    private String getRefreshToken(HttpServletRequest request) {
-        if (request.getCookies() == null) {
-            HotelApplication.LOGGER.info("Cookie list is empty");
-            return null;
-        }
-
-        for (Cookie cookie : request.getCookies()) {
-            if (cookie.getName().equals("refresh_token")) {
-                return cookie.getValue();
-            }
-        }
-        return null;
+    public AuthUtility(UserService userService) {
+        this.userService = userService;
     }
 
-    public static Algorithm getAlgorithm() {
-        return Algorithm.HMAC512(secret.getBytes());
-    }
-
-    public static JWTVerifier getVerifier() {
-        return JWT.require(getAlgorithm()).build();
-    }
-
-    public static String createAccessJWT(String subject, String claim, HttpServletRequest request) {
-        return JWT.create()
-                .withSubject(subject)
-                .withExpiresAt(new Date(System.currentTimeMillis() + 30 * 60 * 1000))
-                .withIssuer(request.getRequestURL().toString())
-                .withClaim("role", claim)
-                .sign(getAlgorithm());
-    }
-
-    public static String createRefreshJWT(String subject, HttpServletRequest request) {
-        return JWT.create()
-                .withSubject(subject)
-                .withExpiresAt(new Date(System.currentTimeMillis() + 14 * 24 * 60 * 60 * 1000))
-                .withIssuer(request.getRequestURL().toString())
-                .sign(getAlgorithm());
-    }
-
-    public String createAccessJWTFromRefreshToken(HttpServletRequest request) {
-        String refreshToken = getRefreshToken(request);
-        if (refreshToken == null) {
-            HotelApplication.LOGGER.info("Refresh token not provided");
-            return null;
-        }
-
+    public String createJWTFromRequest(HttpServletRequest req) {
+        String refreshToken = getRefreshToken(req);
+        if (refreshToken == null) return null;
         DecodedJWT decodedJWT = getVerifier().verify(refreshToken);
         String email = decodedJWT.getSubject();
         User user = userService.getUserBy(email);
-
-        return createAccessJWT(user.getEmail(), user.getRoleAsString(), request);
+        return JWT.create()
+                .withSubject(user.getEmail())
+                .withExpiresAt(new Date(System.currentTimeMillis() + 30 * 1000))    // 30 seconds
+                .withIssuer(req.getRequestURL().toString())
+                .withClaim("roles", user.getRoles().stream().
+                        map(Role::getName).collect(Collectors.toList()))
+                .sign(getAlgorithm());
     }
 
-    public static String getEmailFromRequest(HttpServletRequest request) {
-        String authorizationHeader = request.getHeader(AUTHORIZATION);
+    public static String getEmailFromRequest(HttpServletRequest req) {
+        String authorizationHeader = req.getHeader(AUTHORIZATION);
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             try {
                 String token = authorizationHeader.substring("Bearer ".length());
                 DecodedJWT decodedJWT = getVerifier().verify(token);
                 return decodedJWT.getSubject();
             } catch (Exception e) {
-                HotelApplication.LOGGER.info("JWT verification failed");
                 return null;
             }
         }
         return null;
     }
 
-    public static DecodedJWT getDecodedJWT(String token) {
-        return getVerifier().verify(token);
+    private String getRefreshToken(HttpServletRequest req) {
+        try {
+            for (Cookie c : req.getCookies()) {
+                if (c.getName().equals("refreshToken"))
+                    return c.getValue();
+            }
+        } catch (Exception e) {
+            return null;
+        }
+        return null;
     }
 
-    public static void setResponseMessage(HttpServletResponse response, String messageKey, String messageValue) {
-        Map<String, String> responseObject = new HashMap<>();
-        responseObject.put(messageKey, messageValue);
-        response.setContentType(APPLICATION_JSON_VALUE);
+    public static JWTVerifier getVerifier() {
+        return JWT.require(getAlgorithm()).build();
+    }
 
-        try {
-            new ObjectMapper().writeValue(response.getOutputStream(), responseObject);
-        } catch (IOException e) {
-            HotelApplication.LOGGER.error(e.getMessage());
-        }
+    public static Algorithm getAlgorithm() {
+        return Algorithm.HMAC512("secret".getBytes());
+    }
+
+    public static void setResponseMessage(HttpServletResponse response, String messageName, String messageText)
+            throws IOException {
+        Map<String, String> responseObject = new HashMap<>();
+        responseObject.put(messageName, messageText);
+        new ObjectMapper().writeValue(response.getOutputStream(), responseObject);
     }
 }
