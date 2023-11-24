@@ -11,4 +11,5 @@ import java.util.UUID;
 @Repository
 public interface HostRepository extends JpaRepository<Host, UUID> {
     Optional<Host> findByEmail(String email);
+    Host findFirstByEmail(String email);
 }
