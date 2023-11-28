@@ -15,6 +15,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,12 +45,38 @@ public class JwtUtil {
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("roles", userDetails.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList()));
-        return createToken(claims, userDetails);
+        return createToken(claims, userDetails.getUsername());
     }
 
-    private String createToken(Map<String, Object> claims, UserDetails userDetails) {
-        User user = userService.getUserBy(userDetails.getUsername());
-        return JWT.create().withSubject(userDetails.getUsername()).withExpiresAt(new Date(System.currentTimeMillis() + 1000 * 60 * 30)).
+    public String createJWTFromRequest(HttpServletRequest req) {
+        User user = userService.getUserBy(getEmailFromRequest(req));
+        String token = JWT.create()
+                .withSubject(user.getEmail())
+                .withExpiresAt(new Date(System.currentTimeMillis() + 30 * 1000))    // 30 seconds
+                .withIssuer(req.getRequestURL().toString())
+                .withClaim("roles", user.getRoles().stream().
+                        map(Role::getName).collect(Collectors.toList()))
+                .sign(getAlgorithm());
+        return token;
+    }
+
+    public String getRefreshToken(HttpServletRequest req) {
+        try {
+            for (Cookie c : req.getCookies()) {
+                System.out.println(c.getName());
+                System.out.println(c.getValue());
+                if (c.getName().equals("refreshToken"))
+                    return c.getValue();
+            }
+        } catch (Exception e) {
+            return null;
+        }
+        return null;
+    }
+
+    private String createToken(Map<String, Object> claims, String username) {
+        User user = userService.getUserBy(username);
+        return JWT.create().withSubject(username).withExpiresAt(new Date(System.currentTimeMillis() + 1000 * 60 * 30)).
                 withClaim("roles", user.getRoles().stream().map(Role::getName).collect(Collectors.toList()))
                 .sign(Algorithm.HMAC512(JwtUtil.SECRET.getBytes()));
     }

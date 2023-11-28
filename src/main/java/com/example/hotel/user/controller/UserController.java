@@ -42,9 +42,11 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.springframework.http.HttpStatus.*;
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 @RestController
 @RequestMapping("/api/user")
+@CrossOrigin(origins = "https://localhost:4200")
 public class UserController {
     private final UserService userService;
     private final JwtUtil jwtUtil;
@@ -194,6 +196,30 @@ public class UserController {
             responseObject.put("error", "Not succeed. Unknown error");
             return new ResponseEntity<>(responseObject, INTERNAL_SERVER_ERROR);
         }
+    }
+
+    @GetMapping("/refresh")
+    public ResponseEntity<?> refreshToken(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        Map<String, String> responseObject = new HashMap<>();
+        try {
+            String accessToken = jwtUtil.createJWTFromRequest(request);
+            if (accessToken != null) {
+                responseObject.put("access_token", accessToken);
+                return new ResponseEntity<>(responseObject, OK);
+            } else {
+                responseObject.put("error", "Not succeed. Refresh token is missing");
+                return new ResponseEntity<>(responseObject, UNAUTHORIZED);
+            }
+        } catch (Exception e) {
+            responseObject.put("error", e.getMessage());
+            return new ResponseEntity<>(responseObject, INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/auth/check")
+    public ResponseEntity<?> AuthCheck(HttpServletRequest request) throws IOException {
+        Map<String, String> responseObject = new HashMap<>();
+        return new ResponseEntity<>(OK);
     }
 
 

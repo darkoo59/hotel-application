@@ -36,7 +36,6 @@ public abstract class User {
     private Sex sex;
     private LocalDate birthdate;
     @ManyToMany(fetch = FetchType.EAGER)
-    @JsonIgnore
     protected Collection<Role> roles = new ArrayList<>();
 
 }
