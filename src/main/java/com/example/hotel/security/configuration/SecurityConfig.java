@@ -1,6 +1,7 @@
 package com.example.hotel.security.configuration;
 
 import com.example.hotel.security.filter.JwtRequestFilter;
+import jakarta.servlet.DispatcherType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -28,8 +29,9 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http.headers().contentSecurityPolicy("script-src 'self");
         return http.csrf(csrf -> csrf.disable()).authorizeHttpRequests(auth -> auth.
-                        requestMatchers("/api/user/registration", "/api/user/token").permitAll().anyRequest().authenticated()).
+                        requestMatchers("/api/user/registration", "/api/user/token", "/api/user/registrationConfirm").permitAll().anyRequest().authenticated()).
                 sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS)).
                 addFilterBefore(requestFilter, UsernamePasswordAuthenticationFilter.class).build();
     }

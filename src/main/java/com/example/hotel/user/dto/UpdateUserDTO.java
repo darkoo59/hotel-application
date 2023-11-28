@@ -6,14 +6,13 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
 import java.time.LocalDate;
 
-@Getter
-@Setter
-public class RegisterBodyDTO {
+@Data
+public class UpdateUserDTO {
+
     @Valid
     @NotNull(message = "Firstname may not be null")
     @NotBlank(message = "Firstname may not be blank")
@@ -28,10 +27,6 @@ public class RegisterBodyDTO {
     @NotBlank(message = "Email may not be blank")
     @NotEmpty(message = "Email may not be empty")
     private String email;
-    @NotNull(message = "Password may not be null")
-    @NotBlank(message = "Password may not be blank")
-    @NotEmpty(message = "Password may not be empty")
-    private String password;
     @NotNull(message = "Address may not be null")
     @NotBlank(message = "Address may not be blank")
     @NotEmpty(message = "Address may not be empty")
@@ -42,10 +37,6 @@ public class RegisterBodyDTO {
     private String phone;
     @NotNull(message = "Sex may not be null")
     private Sex sex;
-    @NotNull(message = "Role may not be null")
-    @NotBlank(message = "Role may not be blank")
-    @NotEmpty(message = "Role may not be empty")
-    private String role;
     @NotNull(message = "Birthdate may not be null")
     private LocalDate birthdate;
 }

@@ -21,6 +21,7 @@ public class ObjectsMapper {
                 map().setAddress(source.getAddress());
                 map().setSex(source.getSex());
                 map().setBirthdate(source.getBirthdate());
+                map().setEnabled(false);
             }
         };
 
@@ -41,6 +42,7 @@ public class ObjectsMapper {
                 map().setAddress(source.getAddress());
                 map().setSex(source.getSex());
                 map().setBirthdate(source.getBirthdate());
+                map().setEnabled(false);
             }
         };
 
