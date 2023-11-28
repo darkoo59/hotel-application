@@ -10,6 +10,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Getter
 @Setter
-@DiscriminatorValue("guest")
 public class Guest extends User{
 }
