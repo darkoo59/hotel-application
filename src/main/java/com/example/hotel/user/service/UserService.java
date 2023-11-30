@@ -135,7 +135,7 @@ public class UserService {
             throw new EmailExistException();
         User user;
         if(guestRepository.findByEmail(username).isPresent())
-            user = hostRepository.findFirstByEmail(username);
+            user = guestRepository.findFirstByEmail(username);
         else if (hostRepository.findByEmail(username).isPresent())
             user = hostRepository.findFirstByEmail(username);
         else
